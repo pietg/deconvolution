@@ -68,7 +68,7 @@
 		MLE <- output$value_function
 		iterations <- output$iterations
 	
-		if (iterations<500)
+		if (iterations<200)
 		{
 			count = count+1
 	    		#write(MLE,file = "MLE.txt", ncol = ngrid, append = TRUE)
