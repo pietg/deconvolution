@@ -821,3 +821,90 @@ library(Rcpp)#
    lines(x,y0,lwd=2,lty=2,col="red")#
    lines(x,y1,lwd=2,lty=2,col="blue")#
    sprintf("count = %d",count)
+library(Rcpp)#
+	sourceCpp("nonparMLE_unif.cpp")#
+	#sourceCpp("nonparMLE_unif_IQM.cpp")#
+	NumIt = 10000#
+	n = 1000#
+	step=0.1#
+#
+	upper_bound = 2	# upper bound for truncated exponential#
+	ngrid = 19#
+	low = 0.5		# lower bound for E#
+	high = 1.5		# upper bound for E#
+	F0 <- function(t){(t>=0 && t<upper_bound)*(1-exp(-t))/(1-exp(-upper_bound)) + (t>=upper_bound)}#
+    f0 <- function(t){(t>=0 && t<upper_bound)*exp(-t)/(1-exp(-upper_bound))}#
+    #F0 <- function(t){(t>=0 && t<upper_bound)*t/upper_bound + (t>= upper_bound)}#
+    #f0 <- function(t){(t>=0 && t<upper_bound)/upper_bound}#
+# data vectors#
+	S <- vector("numeric", n)#
+	E <- vector("numeric", n)#
+	variances <- matrix(0, nrow= ngrid, ncol= 2, byrow = FALSE)#
+#
+	data <- matrix(0, nrow= n, ncol= 2, byrow = FALSE)#
+	MLEMat <- matrix(0, nrow= NumIt, ncol= ngrid, byrow = FALSE)#
+count = 0#
+for (iter in 1: NumIt)#
+{#
+  	sim = iter#
+  	print(iter)#
+	set.seed(sim)#
+# generate data#
+	for (i in 1: n)#
+	{ 	#
+		e <- runif(1,low,high)#
+		u <- runif(1,0,1)#
+		u <- -log(1-u+u*exp(-upper_bound))#
+		#u <- runif(1,0, upper_bound)#
+		v <- runif(1,0,e)#
+		S[i] <- u+v#
+		data[i,1] <- max(0,S[i]- e)#
+		data[i,2] <- S[i]#
+	}#
+#
+# Compute MLE	#
+#
+	output <- NPMLE(n,data,ngrid,step)#
+	MLE <- output$value_function#
+	iterations <- output$iterations#
+	#write(MLE,file = "MLE.txt", ncol = ngrid, append = TRUE)#
+	MLEMat[iter,] = MLE#
+	if (iterations<200)#
+	{#
+		count = count+1#
+	    #write(MLE,file = "MLE.txt", ncol = ngrid, append = TRUE)#
+		MLEMat[count,] = MLE		#
+	}	#
+}#
+	MLEMat2 <- matrix(0, nrow= count, ncol= ngrid, byrow = FALSE)#
+	for (i in 1: count)#
+	{#
+		for (j in 1: ngrid)#
+		MLEMat2[i,j]=MLEMat[i,j]#
+	}#
+	for (j in 1: ngrid)#
+	{#
+		variances[j,1] = j*0.1#
+		variances[j,2] = n^(2/3)*var(MLEMat2[,j])#
+	}#
+#
+	y <- vector("numeric", ngrid)#
+	y0 <- vector("numeric", ngrid)#
+	y1 <- vector("numeric", ngrid)#
+	for (i in 1: ngrid)#
+	{#
+		y1[i] <- 0.263555964*(4*f0(i*step)*F0(i*step)*(1-F0(i*step)))^(2/3)#
+		h <- function(e){e^(-1)*(high-low)^(-1)*(1/(F0(i*step)-F0(i*step-e))+1/(F0(i*step+e)-F0(i*step)))}#
+		a <- integrate(Vectorize(h), lower = low, upper = high)$value#
+		#a <- quad(Vectorize(h),1/2,3/2)#
+		y0[i] <- 0.263555964*(4*f0(i*step)/a)^(2/3)#
+		#y0[i] <- 0.263555964*(4*f0(i* step)*F0(i* step)*(1-F0(i* step)))^(2/3)#
+		#y0[i] <- 0.263555964*(4*f0(i*step)/(1/(F0(i*step)-F0(i*step-1))+1/(F0(i*step+1)-F0(i*step))))^(2/3)#
+		y[i] <-  variances[i,2]#
+	}#
+	x <- seq(0.1, ngrid*0.1, by = 0.1)#
+	plot(c(-1000,-1000),xlim=c(0,upper_bound), ylim=c(min(y,y0,y1),max(y,y0,y1)), main= "",ylab="",xlab="",bty="n",las=1)#
+	lines(x,y,lwd=2)#
+	lines(x,y0,lwd=2,lty=2,col="red")#
+	lines(x,y1,lwd=2,lty=2,col="blue")#
+	sprintf("count = %d",count)
