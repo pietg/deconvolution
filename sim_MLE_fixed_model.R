@@ -1,12 +1,12 @@
 	library(Rcpp)
 	sourceCpp("nonparMLE_unif.cpp")
 	
-	NumIt = 10000. #Number of samples
-	n = 1000. #Sample size
+	NumIt = 10000
+	n = 1000
 
 	upper_bound = 2	# upper bound for support
-	ngrid = 19. #Number of points where the estimate is evaluated
-	step=0.1. #width of the grid
+	ngrid = 19
+	step=0.1
 	
 	variances <- matrix(0, nrow= ngrid, ncol= 2, byrow = FALSE)
 	
@@ -41,6 +41,7 @@
 
 
 	count =0
+	
 	for (iter in 1: NumIt)
 	{
   		sim = iter
